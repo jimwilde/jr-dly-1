@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "miniaudio_utils.h"
 #include "device.h"
 #include "encoder.h"
@@ -67,7 +68,8 @@ int main(int argc, char **argv)
   }
 
   // SET the user data AFTER the encoder is ready but BEFORE starting
-  device.pUserData = &encoder;
+  AudioSettings audio_settings = {.bypass = false, .encoder = &encoder, .volume = 0.5};
+  device.pUserData = &audio_settings;
 
   // START the hardware thread
   result = ma_device_start(&device);
@@ -79,7 +81,19 @@ int main(int argc, char **argv)
   }
 
   printf("Press Enter to stop recording...\n");
-  getchar();
+  for (;;)
+  {
+    printf("> ");
+    char line[16];
+    fgets(line, sizeof(line), stdin);
+    if (line[0] == '\n')
+      break;
+    if (line[0] == 'b')
+    {
+      audio_settings.bypass = !audio_settings.bypass;
+      printf("Bypass is: %s\n", audio_settings.bypass ? "ON" : "OFF");
+    }
+  }
 
   // uninitialise miniaudio elements
   ma_device_uninit(&device);

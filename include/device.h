@@ -1,4 +1,12 @@
+#include <stdbool.h>
 #include "miniaudio_utils.h"
+typedef struct
+{
+  ma_encoder *encoder;
+  float volume;
+  bool bypass;
+} AudioSettings;
+
 typedef struct
 {
   int capture;
