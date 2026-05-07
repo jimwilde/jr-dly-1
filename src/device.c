@@ -11,7 +11,7 @@ void select_device(ma_uint32 playbackCount, ma_device_info *pPlaybackInfos, ma_u
   {
     printf("%d - %s\n", iDevice, pCaptureInfos[iDevice].name);
   }
-  printf("> ");
+  printf("> \n");
   scanf("%d%*c", &indexes->capture);
 
   printf("Select playback device:\n");
@@ -20,7 +20,7 @@ void select_device(ma_uint32 playbackCount, ma_device_info *pPlaybackInfos, ma_u
   {
     printf("%d - %s\n", iDevice, pPlaybackInfos[iDevice].name);
   }
-  printf("> ");
+  printf("> \n");
   scanf("%d%*c", &indexes->playback);
 }
 
