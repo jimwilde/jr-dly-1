@@ -71,8 +71,34 @@ int main(int argc, char **argv)
   }
 
   // SET the user data AFTER the encoder is ready but BEFORE starting
-  AudioSettings audio_settings = {.bypass = false, .encoder = &encoder, .volume = 0.5};
-  device.pUserData = &audio_settings;
+  AudioSettings audio_settings = {
+      .bypass = false,
+      .encoder = &encoder,
+      .volume = 0.5,
+      .bufferSizeInFrames = device.sampleRate * 2,
+      .writeIndex = 0,
+      .feedback = 0.8f};
+
+  result = ma_pcm_rb_init(
+      device.capture.format,
+      device.capture.channels,
+      audio_settings.bufferSizeInFrames,
+      NULL, // Let miniaudio allocate the memory
+      NULL, // Use default allocation callbacks
+      &audio_settings.delayBuffer);
+  if (result != MA_SUCCESS)
+  {
+    printf("Failed to initialize ring buffer.\n");
+    return -1;
+  }
+
+  device.pUserData = &audio_settings; // attach audio settings to device
+
+  // Advance the write pointer by the initial delay amount.
+  // This leaves an empty region in the ring buffer so playback/read can start
+  // after the first chunk of captured audio has been recorded.
+  ma_uint32 seekFrames = (ma_uint32)(audio_settings.feedback * device.sampleRate);
+  ma_pcm_rb_seek_write(&audio_settings.delayBuffer, seekFrames);
 
   // START the hardware thread
   result = ma_device_start(&device);
@@ -90,11 +116,43 @@ int main(int argc, char **argv)
     char line[16];
     fgets(line, sizeof(line), stdin);
     if (line[0] == '\n')
+    {
       break;
-    if (line[0] == 'b')
+    }
+    else if (line[0] == 'b')
     {
       audio_settings.bypass = !audio_settings.bypass;
       printf("Bypass is: %s\n", audio_settings.bypass ? "ON" : "OFF");
+    }
+    else if (line[0] == 'v')
+    {
+      float newVolume;
+      if (sscanf(&line[2], "%f", &newVolume) == 1)
+      {
+        // Clamp volume between 0.0 and 1.0
+        if (newVolume < 0.0f)
+          newVolume = 0.0f;
+        if (newVolume > 1.0f)
+          newVolume = 1.0f;
+
+        audio_settings.volume = newVolume;
+        printf("Volume set to %.2f\n", audio_settings.volume);
+      }
+    }
+    else if (line[0] == 'f')
+    {
+      float newFeedback;
+      if (sscanf(&line[2], "%f", &newFeedback) == 1)
+      {
+        // CRITICAL: Clamp feedback strictly below 1.0
+        if (newFeedback < 0.0f)
+          newFeedback = 0.0f;
+        if (newFeedback >= 0.99f)
+          newFeedback = 0.99f;
+
+        audio_settings.feedback = newFeedback;
+        printf("Feedback set to %.2f\n", audio_settings.feedback);
+      }
     }
   }
 

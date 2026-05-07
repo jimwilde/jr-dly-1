@@ -5,6 +5,10 @@ typedef struct
   ma_encoder *encoder;
   float volume;
   bool bypass;
+  ma_pcm_rb delayBuffer;
+  ma_uint32 bufferSizeInFrames;
+  ma_uint32 writeIndex;
+  float feedback;
 } AudioSettings;
 
 typedef struct
