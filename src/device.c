@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include "miniaudio.h"
 #include "device.h"
 #include "miniaudio_utils.h"
 
@@ -18,30 +17,23 @@ void select_device(ma_uint32 playbackCount, ma_device_info *pPlaybackInfos, devi
   scanf("%d%*c", &indexes->playback);
 }
 
-ma_result configure_device(
-    ma_context *ctx,
-    ma_device_config *cfg,
-    ma_device *device,
-    ma_device_info *pPlaybackInfos,
-    ma_uint32 playbackCount,
-    ma_device_info *pCaptureInfos,
-    device_indexes *indexes)
+ma_result configure_device(cfg_devices_args *args)
 {
-  *indexes = (device_indexes){.capture = 0, .playback = 0};
+  *args->indexes = (device_indexes){.capture = 0, .playback = 0};
   // user prompted to choose c/p devices
-  select_device(playbackCount, pPlaybackInfos, indexes);
+  select_device(args->playbackCount, args->pPlaybackInfos, args->indexes);
 
   // 1. Initialize the Device FIRST with "0" (native) settings
-  *cfg = ma_device_config_init(ma_device_type_duplex);
-  cfg->capture.pDeviceID = &pCaptureInfos[indexes->capture].id;
-  cfg->capture.format = ma_format_f32;
-  cfg->capture.channels = 0;
-  cfg->playback.pDeviceID = &pPlaybackInfos[indexes->playback].id;
-  cfg->playback.format = ma_format_f32;
-  cfg->playback.channels = 0;
-  cfg->sampleRate = 0;
-  cfg->dataCallback = data_callback;
-  // deviceConfig.pUserData = &encoder; // Do NOT set this yet as encoder isn't ready
+  *args->cfg = ma_device_config_init(ma_device_type_duplex);
+  args->cfg->capture.pDeviceID = &args->pCaptureInfos[args->indexes->capture].id;
+  args->cfg->capture.format = ma_format_f32;
+  args->cfg->capture.channels = 0;
+  args->cfg->playback.pDeviceID = &args->pPlaybackInfos[args->indexes->playback].id;
+  args->cfg->playback.format = ma_format_f32;
+  args->cfg->playback.channels = 0;
+  args->cfg->sampleRate = 0;
+  args->cfg->dataCallback = data_callback;
+  // args->cfg->pUserData = &encoder; // Do NOT set this yet as encoder isn't ready
 
-  return ma_device_init(ctx, cfg, device);
+  return ma_device_init(args->ctx, args->cfg, args->device);
 }

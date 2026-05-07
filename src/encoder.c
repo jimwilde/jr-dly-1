@@ -1,11 +1,7 @@
-#include "miniaudio_utils.h"
+#include "encoder.h"
 
-ma_result configure_encoder(
-    char *filename,
-    ma_device *device,
-    ma_encoder_config *encoderConfig,
-    ma_encoder *encoder)
+ma_result configure_encoder(cfg_encoder_args *args)
 {
-  *encoderConfig = ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, device->capture.channels, device->sampleRate);
-  return ma_encoder_init_file(filename, encoderConfig, encoder);
+  *args->encoderConfig = ma_encoder_config_init(ma_encoding_format_wav, ma_format_f32, args->device->capture.channels, args->device->sampleRate);
+  return ma_encoder_init_file(args->filename, args->encoderConfig, args->encoder);
 }

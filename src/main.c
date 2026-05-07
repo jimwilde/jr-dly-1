@@ -1,7 +1,7 @@
 #include <stdio.h>
-#define MINIAUDIO_IMPLEMENTATION
 #include "miniaudio_utils.h"
 #include "device.h"
+#include "encoder.h"
 
 int main(int argc, char **argv)
 {
@@ -37,7 +37,14 @@ int main(int argc, char **argv)
   ma_device device;
   device_indexes dev_idxs;
 
-  result = configure_device(&context, &deviceConfig, &device, pPlaybackInfos, playbackCount, pCaptureInfos, &dev_idxs);
+  result = configure_device(&(cfg_devices_args){
+      .ctx = &context,
+      .cfg = &deviceConfig,
+      .device = &device,
+      .pPlaybackInfos = pPlaybackInfos,
+      .playbackCount = playbackCount,
+      .pCaptureInfos = pCaptureInfos,
+      .indexes = &dev_idxs});
   if (result != MA_SUCCESS)
   {
     printf("Failed to initialize capture device.\n");
@@ -48,7 +55,11 @@ int main(int argc, char **argv)
   ma_encoder_config encoderConfig;
   ma_encoder encoder;
 
-  result = configure_encoder(argv[1], &device, &encoderConfig, &encoder);
+  result = configure_encoder(&(cfg_encoder_args){
+      .filename = argv[1],
+      .device = &device,
+      .encoderConfig = &encoderConfig,
+      .encoder = &encoder});
   if (result != MA_SUCCESS)
   {
     printf("Failed to initialize output file.\n");
