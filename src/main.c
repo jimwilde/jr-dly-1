@@ -27,7 +27,7 @@ int main(int argc, char **argv)
   ma_device_info *pCaptureInfos;
   ma_uint32 captureCount = 0;
 
-  result = can_get_devices(context, &pPlaybackInfos, &playbackCount, &pCaptureInfos, &captureCount);
+  result = can_get_devices(&context, &pPlaybackInfos, &playbackCount, &pCaptureInfos, &captureCount);
   if (result != MA_SUCCESS)
   {
     return -1;
@@ -36,7 +36,10 @@ int main(int argc, char **argv)
   // Set up device
   ma_device_config deviceConfig;
   ma_device device;
-  device_indexes dev_idxs;
+  device_indexes dev_idxs = {.capture = 0, .playback = 0};
+
+  // user prompted to choose c/p devices
+  select_device(playbackCount, pPlaybackInfos, captureCount, pCaptureInfos, &dev_idxs);
 
   result = configure_device(&(cfg_devices_args){
       .ctx = &context,
@@ -96,6 +99,7 @@ int main(int argc, char **argv)
   }
 
   // uninitialise miniaudio elements
+  ma_context_uninit(&context);
   ma_device_uninit(&device);
   ma_encoder_uninit(&encoder);
 

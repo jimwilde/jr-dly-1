@@ -6,6 +6,6 @@ void data_callback(ma_device *pDevice, void *pOutput, const void *pInput, ma_uin
 
 ma_result init_context(ma_context *pContext);
 
-ma_result can_get_devices(ma_context context, ma_device_info **pPlaybackInfos, ma_uint32 *playbackCount, ma_device_info **pCaptureInfos, ma_uint32 *captureCount);
+ma_result can_get_devices(ma_context *context, ma_device_info **pPlaybackInfos, ma_uint32 *playbackCount, ma_device_info **pCaptureInfos, ma_uint32 *captureCount);
 
 #endif

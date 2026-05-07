@@ -13,7 +13,7 @@ typedef struct
   int playback;
 } device_indexes;
 
-void select_device(ma_uint32 playbackCount, ma_device_info *pPlaybackInfos, device_indexes *indexes);
+void select_device(ma_uint32 playbackCount, ma_device_info *pPlaybackInfos, ma_uint32 captureCount, ma_device_info *pCaptureInfos, device_indexes *indexes);
 
 typedef struct
 {
