@@ -53,26 +53,25 @@ struct Link4Manager
 
     if (info.tempo > 0.0)
     {
-      /* Measure one-way latency: how old is the buffer when it arrives? */
+      /* Snapshot one-way latency for display — not applied to compensation */
       if (auto endBeat = info.endBeats(sessionState, quantum))
       {
         auto now = link.clock().micros();
         double currentBeat = sessionState.beatAtTime(now, quantum);
         double oneWayBeats = std::max(0.0, currentBeat - *endBeat);
         double roundTripMs = oneWayBeats * 60000.0 / info.tempo * 2.0;
-        float prev = measuredLatencyMs.load();
-        measuredLatencyMs.store(prev * 0.9f + static_cast<float>(roundTripMs) * 0.1f);
+        measuredLatencyMs.store(static_cast<float>(roundTripMs));
       }
 
-      /* Beat-synced delay minus total latency compensation */
+      /* Beat-synced delay minus manual compensation — rounded to nearest frame */
       double beatDelayFrames =
         info.sampleRate * 60.0 / info.tempo * static_cast<double>(delayBeats.load());
       double compFrames =
-        info.sampleRate * (measuredLatencyMs.load() + manualLatencyMs.load()) / 1000.0;
+        info.sampleRate * static_cast<double>(manualLatencyMs.load()) / 1000.0;
       double adjustedFrames = std::max(0.0, beatDelayFrames - compFrames);
 
       const size_t delaySamples =
-        static_cast<size_t>(adjustedFrames) * info.numChannels;
+        static_cast<size_t>(std::llround(adjustedFrames)) * info.numChannels;
       const size_t bufSize = audioSettings->bufferSizeInFrames;
       atomic_store(&audioSettings->delaySamples,
                    delaySamples < bufSize ? delaySamples : bufSize - 1);

@@ -1,10 +1,7 @@
 .history
 bin/
 build/
-*.wav
 
-# Ignore all test executables
-tests/*.out
 # Ignore main binary
 jr-dly-1
 # Ignore object files
