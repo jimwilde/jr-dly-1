@@ -113,6 +113,48 @@ Tests cover `delay_effect.c` and `menu.c`. `main.c` and `link_bridge.cpp` are ex
 
 Compiled test binaries are removed automatically after the run.
 
+## Delay algorithm
+
+### Beat-to-samples conversion
+
+On every audio callback the current Link tempo is used to convert the requested beat count into a sample offset:
+
+```
+delaySamples = round(sampleRate × (60 / tempo) × delayBeats) × numChannels
+```
+
+Because this is recalculated from the live tempo each callback, the delay time tracks BPM changes in real time without glitching.
+
+### Ring buffer
+
+The delay line is a fixed-size circular buffer (`bufferSizeInFrames = sampleRate × 4`, i.e. four seconds of headroom). A write head advances one sample per frame. The read head sits exactly `delaySamples` behind it:
+
+```
+readIdx = (writeIdx + bufferSize - delaySamples) % bufferSize
+```
+
+Wrapping via modulo keeps both heads inside the buffer indefinitely.
+
+### Output mix
+
+For each sample the dry and delayed signals are blended:
+
+```
+output = input × (1 − mix) + delayedSample × volume × mix
+```
+
+`mix = 0.0` passes the dry signal only; `mix = 1.0` passes the delayed signal only.
+
+### Feedback
+
+Before advancing the write head, the input is summed with the scaled delayed sample and written back into the buffer:
+
+```
+delayLine[writeIdx] = input + delayedSample × feedback
+```
+
+This feeds each echo back through the delay line, producing a series of repeats that decay geometrically. At `feedback = 0.0` there is a single echo; as `feedback` approaches `1.0` the echoes sustain longer. Values at or above `1.0` would cause runaway growth, so the parameter is clamped to `0.0–0.99`.
+
 ## Architecture
 
 - **`src/main.c`** — CLI loop and command dispatch
