@@ -42,7 +42,7 @@ extern "C"
   void link_subscribe_channel(void *handle, const uint8_t id[8]);
   void link_unsubscribe_channel(void *handle);
   /* Latency compensation */
-  float link_get_measured_latency_ms(void *handle);
+  float link_get_buffer_latency_ms(void *handle);
   void link_set_manual_latency_ms(void *handle, float ms);
   float link_get_manual_latency_ms(void *handle);
 

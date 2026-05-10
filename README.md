@@ -96,7 +96,7 @@ Keep the source track and receive track completely isolated:
 | `t 1/2` | Eighth note | 250 ms |
 | `t 1/4` | Sixteenth note | 125 ms |
 
-**Latency compensation (`z`)** — because audio travels Ableton → app → Ableton, the echo lands slightly late. Use `s` to see the measured round-trip time, then set `z` to match. Example: if the measured latency reads `28 ms`, run `z 28`. Fine-tune by ear from there. A value of `32` is typical for a local Link session.
+**Latency compensation (`z`)** — because audio travels Ableton → app → Ableton, the echo lands slightly late. The `buffer` value shown by `s` is the base round-trip estimate (two audio buffer lengths). Use that as your starting point for `z`, then fine-tune by ear. Example: if `s` shows `buffer 10.7 ms`, start with `z 10.7` and adjust from there.
 
 ## Tests
 

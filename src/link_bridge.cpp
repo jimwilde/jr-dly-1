@@ -22,7 +22,7 @@ struct Link4Manager
   double quantum;
 
   std::atomic<float> delayBeats{1.0f};
-  std::atomic<float> measuredLatencyMs{0.0f}; /* EMA of round-trip, auto-measured */
+  std::atomic<float> bufferLatencyMs{0.0f};   /* 2 * buffer size in ms — base round-trip estimate */
   std::atomic<float> manualLatencyMs{0.0f};   /* user fine-tune offset */
 
   /* Pre-allocated float conversion buffers (avoids per-callback heap alloc) */
@@ -53,15 +53,9 @@ struct Link4Manager
 
     if (info.tempo > 0.0)
     {
-      /* Snapshot one-way latency for display — not applied to compensation */
-      if (auto endBeat = info.endBeats(sessionState, quantum))
-      {
-        auto now = link.clock().micros();
-        double currentBeat = sessionState.beatAtTime(now, quantum);
-        double oneWayBeats = std::max(0.0, currentBeat - *endBeat);
-        double roundTripMs = oneWayBeats * 60000.0 / info.tempo * 2.0;
-        measuredLatencyMs.store(static_cast<float>(roundTripMs));
-      }
+      /* Round-trip buffer latency: two buffer lengths (source → app → sink) */
+      bufferLatencyMs.store(
+        static_cast<float>(2000.0 * info.numFrames / info.sampleRate));
 
       /* Beat-synced delay minus manual compensation — rounded to nearest frame */
       double beatDelayFrames =
@@ -339,10 +333,10 @@ extern "C"
     return static_cast<Link4Manager *>(handle)->delayBeats.load();
   }
 
-  float link_get_measured_latency_ms(void *handle)
+  float link_get_buffer_latency_ms(void *handle)
   {
     if (!handle) return 0.0f;
-    return static_cast<Link4Manager *>(handle)->measuredLatencyMs.load();
+    return static_cast<Link4Manager *>(handle)->bufferLatencyMs.load();
   }
 
   void link_set_manual_latency_ms(void *handle, float ms)
