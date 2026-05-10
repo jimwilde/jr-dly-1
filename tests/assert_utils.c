@@ -1,15 +1,25 @@
 #include "assert_utils.h"
 
-int handle_assertion(ma_result result, const char *msg, const char *file, int line)
+int assert_true(int cond, const char *msg, const char *file, int line)
 {
-  if (result != MA_SUCCESS)
+  if (!cond)
   {
-    printf("[FAIL] %s\n       File: %s, Line: %d (Result: %d)\n", msg, file, line, result);
-    return 1; // Signal failure
+    printf("[FAIL] %s  (%s:%d)\n", msg, file, line);
+    return 1;
   }
-  else
+  printf("[PASS] %s\n", msg);
+  return 0;
+}
+
+int assert_float_eq(float a, float b, float eps, const char *msg, const char *file, int line)
+{
+  float diff = a - b;
+  if (diff < 0.0f) diff = -diff;
+  if (diff > eps)
   {
-    printf("[PASS] %s\n", msg);
-    return 0; // Signal success
+    printf("[FAIL] %s  (got %.6f, expected %.6f)  (%s:%d)\n", msg, a, b, file, line);
+    return 1;
   }
+  printf("[PASS] %s\n", msg);
+  return 0;
 }

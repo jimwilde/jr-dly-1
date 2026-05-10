@@ -52,7 +52,10 @@ TEST_HELPERS = $(filter-out tests/%_test.c, $(wildcard tests/*.c))
 
 # 4. Main test rule
 test: $(TEST_RUNNERS)
-	@for test in $(TEST_RUNNERS); do ./$$test; done
+	@result=0; \
+	for test in $(TEST_RUNNERS); do ./$$test || result=1; done; \
+	rm -f $(TEST_RUNNERS); \
+	exit $$result
 
 # 5. Generic Pattern Rule
 # This builds any "name_test.c" by linking it with all logic and helpers
