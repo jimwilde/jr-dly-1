@@ -17,7 +17,7 @@ struct Link4Manager
   LinkAudio link;
   LinkAudioSink sink;
   std::unique_ptr<LinkAudioSource> source;
-  AudioSettings *audioSettings;
+  AudioSettings audioSettings{};
   uint32_t sampleRate;
   double quantum;
 
@@ -32,7 +32,6 @@ struct Link4Manager
   Link4Manager(double bpm, uint32_t sampleRate_)
     : link(bpm, "jr-dly-1")
     , sink(link, "Delay Output", 4096)
-    , audioSettings(nullptr)
     , sampleRate(sampleRate_)
     , quantum(4.0)
   {
@@ -42,9 +41,6 @@ struct Link4Manager
 
   void onSourceBuffer(const LinkAudioSource::BufferHandle bufHandle)
   {
-    if (!audioSettings)
-      return;
-
     const auto &info = bufHandle.info;
     const size_t totalSamples = info.numFrames * info.numChannels;
 
@@ -66,8 +62,8 @@ struct Link4Manager
 
       const size_t delaySamples =
         static_cast<size_t>(std::llround(adjustedFrames)) * info.numChannels;
-      const size_t bufSize = audioSettings->bufferSizeInFrames;
-      atomic_store(&audioSettings->delaySamples,
+      const size_t bufSize = audioSettings.bufferSizeInFrames;
+      atomic_store(&audioSettings.delaySamples,
                    delaySamples < bufSize ? delaySamples : bufSize - 1);
     }
 
@@ -83,7 +79,7 @@ struct Link4Manager
       inputBuf[i] = bufHandle.samples[i] / 32768.0f;
 
     /* Apply delay */
-    apply_delay_effect(audioSettings, inputBuf.data(), outputBuf.data(),
+    apply_delay_effect(&audioSettings, inputBuf.data(), outputBuf.data(),
                        info.numFrames, static_cast<int>(info.numChannels));
 
     /* Retain sink buffer */
@@ -129,19 +125,9 @@ extern "C"
     {
       g_mgr = new Link4Manager(bpm, sampleRate);
 
-      g_mgr->audioSettings =
-        static_cast<AudioSettings *>(malloc(sizeof(AudioSettings)));
-      if (!g_mgr->audioSettings)
-      {
-        delete g_mgr;
-        g_mgr = nullptr;
-        return nullptr;
-      }
-
       /* Buffer: 4 seconds of stereo headroom for slow tempos */
-      if (!delay_effect_init(g_mgr->audioSettings, sampleRate * 4))
+      if (!delay_effect_init(&g_mgr->audioSettings, sampleRate * 4))
       {
-        free(g_mgr->audioSettings);
         delete g_mgr;
         g_mgr = nullptr;
         return nullptr;
@@ -282,41 +268,31 @@ extern "C"
   void link_set_volume(void *handle, float volume)
   {
     if (!handle) return;
-    auto *mgr = static_cast<Link4Manager *>(handle);
-    if (mgr->audioSettings)
-      atomic_store(&mgr->audioSettings->volume, volume);
+    atomic_store(&static_cast<Link4Manager *>(handle)->audioSettings.volume, volume);
   }
 
   void link_set_feedback(void *handle, float feedback)
   {
     if (!handle) return;
-    auto *mgr = static_cast<Link4Manager *>(handle);
-    if (mgr->audioSettings)
-      atomic_store(&mgr->audioSettings->feedback, feedback);
+    atomic_store(&static_cast<Link4Manager *>(handle)->audioSettings.feedback, feedback);
   }
 
   void link_set_mix(void *handle, float mix)
   {
     if (!handle) return;
-    auto *mgr = static_cast<Link4Manager *>(handle);
-    if (mgr->audioSettings)
-      atomic_store(&mgr->audioSettings->mix, mix);
+    atomic_store(&static_cast<Link4Manager *>(handle)->audioSettings.mix, mix);
   }
 
   void link_set_bypass(void *handle, bool bypass)
   {
     if (!handle) return;
-    auto *mgr = static_cast<Link4Manager *>(handle);
-    if (mgr->audioSettings)
-      atomic_store(&mgr->audioSettings->bypass, bypass);
+    atomic_store(&static_cast<Link4Manager *>(handle)->audioSettings.bypass, bypass);
   }
 
   bool link_get_bypass(void *handle)
   {
     if (!handle) return false;
-    auto *mgr = static_cast<Link4Manager *>(handle);
-    if (!mgr->audioSettings) return false;
-    return atomic_load(&mgr->audioSettings->bypass);
+    return atomic_load(&static_cast<Link4Manager *>(handle)->audioSettings.bypass);
   }
 
   void link_set_delay_beats(void *handle, float beats)
@@ -368,11 +344,7 @@ extern "C"
       return;
     auto *mgr = static_cast<Link4Manager *>(handle);
     mgr->source.reset();
-    if (mgr->audioSettings)
-    {
-      delay_effect_cleanup(mgr->audioSettings);
-      free(mgr->audioSettings);
-    }
+    delay_effect_cleanup(&mgr->audioSettings);
     delete mgr;
     g_mgr = nullptr;
   }
