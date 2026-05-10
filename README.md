@@ -98,6 +98,21 @@ Keep the source track and receive track completely isolated:
 
 **Latency compensation (`z`)** — because audio travels Ableton → app → Ableton, the echo lands slightly late. Use `s` to see the measured round-trip time, then set `z` to match. Example: if the measured latency reads `28 ms`, run `z 28`. Fine-tune by ear from there. A value of `32` is typical for a local Link session.
 
+## Tests
+
+```bash
+make test
+```
+
+Tests cover `delay_effect.c` and `menu.c`. `main.c` and `link_bridge.cpp` are excluded — they can't be isolated from the Link Audio runtime.
+
+| File | What's tested |
+|------|---------------|
+| `tests/delay_effect_test.c` | Init defaults, bypass, dry mix, impulse delay timing, volume scaling, feedback echo decay, dry/wet blend |
+| `tests/menu_test.c` | Menu output is non-empty, all 12 commands are described, channels-changed notification content, context pointer is ignored |
+
+Compiled test binaries are removed automatically after the run.
+
 ## Architecture
 
 - **`src/main.c`** — CLI loop and command dispatch
