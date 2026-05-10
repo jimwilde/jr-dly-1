@@ -1,6 +1,7 @@
 #ifndef LINK_BRIDGE_H
 #define LINK_BRIDGE_H
 
+#include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -9,41 +10,45 @@ extern "C"
 {
 #endif
 
-  /**
-   * @brief Initialize Ableton Link session with audio support.
-   * @param bpm Initial tempo in beats per minute.
-   * @param sampleRate Sample rate in Hz (typically 48000).
-   * @return Opaque handle to Link manager, NULL on failure.
-   */
+  typedef struct
+  {
+    char name[256];
+    char peer_name[256];
+    uint8_t id[8];
+  } LinkAudioChannel;
+
   void *link_init(double bpm, uint32_t sampleRate);
-
-  /**
-   * @brief Get current BPM from Link session (thread-safe).
-   * @param handle Opaque Link manager handle from link_init().
-   * @param outBpm Pointer to store BPM value.
-   */
   void link_get_bpm(void *handle, double *outBpm);
-
-  /**
-   * @brief Get current beat position (thread-safe).
-   * @param handle Opaque Link manager handle from link_init().
-   * @param outBeat Pointer to store beat value.
-   * @param quantum Quantum value for beat calculation (e.g., 4.0 for bars).
-   */
   void link_get_beat(void *handle, double *outBeat, double quantum);
-
-  /**
-   * @brief Get number of connected peers (thread-safe).
-   * @param handle Opaque Link manager handle from link_init().
-   * @return Number of peers connected to Link session.
-   */
   uint32_t link_get_num_peers(void *handle);
-
-  /**
-   * @brief Cleanup and release Link session resources.
-   * @param handle Opaque Link manager handle from link_init().
-   */
   void link_cleanup(void *handle);
+
+  /* Effect parameters */
+  void link_set_volume(void *handle, float volume);
+  void link_set_feedback(void *handle, float feedback);
+  void link_set_mix(void *handle, float mix);
+  void link_set_bypass(void *handle, bool bypass);
+  bool link_get_bypass(void *handle);
+
+  /* Delay timing */
+  void link_set_delay_beats(void *handle, float beats);
+  float link_get_delay_beats(void *handle);
+
+  /* Audio control */
+  bool link_audio_is_enabled(void *handle);
+  void link_audio_enable(void *handle, bool enabled);
+  bool link_has_source(void *handle);
+  uint32_t link_list_channels(void *handle, LinkAudioChannel *out, uint32_t max);
+  void link_subscribe_channel(void *handle, const uint8_t id[8]);
+  void link_unsubscribe_channel(void *handle);
+  /* Latency compensation */
+  float link_get_measured_latency_ms(void *handle);
+  void link_set_manual_latency_ms(void *handle, float ms);
+  float link_get_manual_latency_ms(void *handle);
+
+  void link_set_channels_changed_callback(void *handle,
+                                          void (*callback)(void *context),
+                                          void *context);
 
 #ifdef __cplusplus
 }

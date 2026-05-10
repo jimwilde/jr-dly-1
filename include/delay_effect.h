@@ -18,9 +18,11 @@ extern "C"
    */
   typedef struct
   {
-    _Atomic(float) volume;   /* Volume scale for delayed signal (0.0-1.0) */
-    _Atomic(float) feedback; /* Feedback amount (0.0-0.99) */
-    _Atomic(bool) bypass;    /* Whether to bypass the effect */
+    _Atomic(float) volume;        /* Gain of the delayed signal (0.0-1.0) */
+    _Atomic(float) feedback;      /* Feedback amount (0.0-0.99) */
+    _Atomic(float) mix;           /* Dry/wet blend: 0.0 = dry only, 1.0 = wet only */
+    _Atomic(bool) bypass;         /* Whether to bypass the effect */
+    _Atomic(size_t) delaySamples; /* Beat-synced delay in samples (updated from Link BPM) */
 
     float *delayBuffer;        /* Ring buffer for delay (allocated by user) */
     size_t bufferSizeInFrames; /* Total size of delay buffer in frames */

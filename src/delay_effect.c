@@ -14,7 +14,9 @@ bool delay_effect_init(AudioSettings *settings, size_t bufferSizeInFrames)
   /* Initialize atomics */
   atomic_init(&settings->volume, 0.5f);
   atomic_init(&settings->feedback, 0.8f);
+  atomic_init(&settings->mix, 1.0f);
   atomic_init(&settings->bypass, false);
+  atomic_init(&settings->delaySamples, bufferSizeInFrames / 2);
 
   /* Zero out delay buffer */
   memset(settings->delayBuffer, 0, bufferSizeInFrames * sizeof(float));
@@ -42,26 +44,29 @@ void apply_delay_effect(
 
   float volume = atomic_load(&settings->volume);
   float feedback = atomic_load(&settings->feedback);
+  float mix = atomic_load(&settings->mix);
 
   size_t bufferSize = settings->bufferSizeInFrames;
   float *delayLine = settings->delayBuffer;
   size_t writeIdx = settings->writeIndex;
 
+  size_t delay = atomic_load(&settings->delaySamples);
+  if (delay == 0 || delay >= bufferSize)
+    delay = bufferSize - 1;
+
   for (size_t i = 0; i < numFrames * numChannels; ++i)
   {
-    /* Read delayed sample from ring buffer */
-    float delayedSample = delayLine[writeIdx];
+    /* Read from delay samples behind the write head */
+    size_t readIdx = (writeIdx + bufferSize - delay) % bufferSize;
+    float delayedSample = delayLine[readIdx];
 
-    /* Output = input + (delayed signal * volume) */
-    output[i] = input[i] + (delayedSample * volume);
+    output[i] = input[i] * (1.0f - mix) + (delayedSample * volume * mix);
 
     /* Write back to delay buffer: input + (delayed * feedback) */
     delayLine[writeIdx] = input[i] + (delayedSample * feedback);
 
     /* Advance write pointer */
-    writeIdx++;
-    if (writeIdx >= bufferSize)
-      writeIdx = 0;
+    writeIdx = (writeIdx + 1) % bufferSize;
   }
 
   /* Save updated write index */
